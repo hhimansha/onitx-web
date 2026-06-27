@@ -2,6 +2,8 @@ export interface User {
   id: string;
   email: string;
   name: string;
+  role: "ADMIN" | "USER";
+  createdAt: string;
 }
 
 export type TaskStatus = "todo" | "in_progress" | "done";
@@ -26,7 +28,7 @@ export interface TaskPayload {
   priority: TaskPriority;
   status: TaskStatus;
   dueDate?: string;
-  assigneeId?: string;
+  assignedToId?: string;
 }
 
 export interface LoginCredentials {

@@ -32,7 +32,7 @@ export const taskSchema = z.object({
   priority: z.enum(["low", "medium", "high"]),
   status: z.enum(["todo", "in_progress", "done"]),
   dueDate: z.string().optional(),
-  assigneeId: z.string().optional(),
+  assignedToId: z.string().optional(),
 });
 
 export type TaskFormValues = z.infer<typeof taskSchema>;
@@ -76,7 +76,7 @@ const TaskForm = ({ mode, defaultValues, onSubmit }: TaskFormProps) => {
       priority: "medium",
       status: "todo",
       dueDate: "",
-      assigneeId: "",
+      assignedToId: "",
       ...defaultValues,
     },
   });
@@ -199,7 +199,7 @@ const TaskForm = ({ mode, defaultValues, onSubmit }: TaskFormProps) => {
 
           <FormField
             control={form.control}
-            name="assigneeId"
+            name="assignedToId"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Assigned User</FormLabel>
