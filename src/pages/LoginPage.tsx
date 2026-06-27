@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useNavigate, Navigate, Link } from "react-router-dom";
+import { Navigate, Link } from "react-router-dom";
 import axios from "axios";
 
 import { useAuth } from "@/hooks/useAuth";
@@ -19,7 +19,6 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 const LoginPage = () => {
   const { login, isAuthenticated } = useAuth();
-  const navigate = useNavigate();
   const [apiError, setApiError] = useState<string | null>(null);
 
   const {
@@ -39,7 +38,10 @@ const LoginPage = () => {
     setApiError(null);
     try {
       await login(data);
-      navigate("/dashboard", { replace: true });
+      // No navigate() here — login() updates context state, which triggers a
+      // re-render. The isAuthenticated guard above then renders <Navigate>.
+      // Calling navigate() here races against React 18 batched state updates
+      // and causes ProtectedRoute to see the old (false) value, bouncing back.
     } catch (err) {
       if (axios.isAxiosError(err)) {
         setApiError(
