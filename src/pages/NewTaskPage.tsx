@@ -1,8 +1,26 @@
+import { useNavigate } from "react-router-dom";
+import TaskForm, { type TaskFormValues } from "@/components/TaskForm";
+import { createTask } from "@/services/taskService";
+
 const NewTaskPage = () => {
+  const navigate = useNavigate();
+
+  const handleSubmit = async (data: TaskFormValues) => {
+    const task = await createTask({
+      ...data,
+      dueDate: data.dueDate || undefined,
+      assigneeId: data.assigneeId || undefined,
+    });
+    navigate(`/tasks/${task.id}`, { replace: true });
+  };
+
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-bold">New Task</h1>
-      <p className="text-muted-foreground">Create task form coming soon.</p>
+    <div className="mx-auto max-w-2xl space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold">New Task</h1>
+        <p className="text-sm text-muted-foreground">Fill in the details below to create a task.</p>
+      </div>
+      <TaskForm mode="create" onSubmit={handleSubmit} />
     </div>
   );
 };

@@ -14,8 +14,19 @@ export interface Task {
   status: TaskStatus;
   priority: TaskPriority;
   dueDate?: string;
+  creator?: User;
+  assignee?: User;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface TaskPayload {
+  title: string;
+  description?: string;
+  priority: TaskPriority;
+  status: TaskStatus;
+  dueDate?: string;
+  assigneeId?: string;
 }
 
 export interface LoginCredentials {
