@@ -10,15 +10,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-const loginSchema = z.object({
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-});
+const registerSchema = z
+  .object({
+    name: z.string().min(2, "Name must be at least 2 characters"),
+    email: z.string().email("Invalid email address"),
+    password: z.string().min(6, "Password must be at least 6 characters"),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
 
-type LoginFormData = z.infer<typeof loginSchema>;
+type RegisterFormData = z.infer<typeof registerSchema>;
 
-const LoginPage = () => {
-  const { login, isAuthenticated } = useAuth();
+const RegisterPage = () => {
+  const { register: registerUser, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [apiError, setApiError] = useState<string | null>(null);
 
@@ -26,8 +33,8 @@ const LoginPage = () => {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
+  } = useForm<RegisterFormData>({
+    resolver: zodResolver(registerSchema),
   });
 
   // Already logged in — send straight to dashboard
@@ -35,15 +42,20 @@ const LoginPage = () => {
     return <Navigate to="/dashboard" replace />;
   }
 
-  const onSubmit = async (data: LoginFormData) => {
+  const onSubmit = async (data: RegisterFormData) => {
     setApiError(null);
     try {
-      await login(data);
+      await registerUser({
+        name: data.name,
+        email: data.email,
+        password: data.password,
+      });
       navigate("/dashboard", { replace: true });
     } catch (err) {
       if (axios.isAxiosError(err)) {
         setApiError(
-          (err.response?.data as { message?: string })?.message ?? "Login failed. Please try again."
+          (err.response?.data as { message?: string })?.message ??
+            "Registration failed. Please try again."
         );
       } else {
         setApiError("An unexpected error occurred.");
@@ -55,13 +67,27 @@ const LoginPage = () => {
     <div className="flex min-h-screen items-center justify-center bg-background">
       <div className="w-full max-w-sm space-y-6 rounded-lg border p-8 shadow-sm">
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold">Sign in to OnitX</h1>
+          <h1 className="text-2xl font-bold">Create an account</h1>
           <p className="text-sm text-muted-foreground">
-            Enter your credentials to continue.
+            Sign up to get started with OnitX.
           </p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
+          <div className="space-y-1">
+            <Label htmlFor="name">Name</Label>
+            <Input
+              id="name"
+              type="text"
+              placeholder="Jane Doe"
+              autoComplete="name"
+              {...register("name")}
+            />
+            {errors.name && (
+              <p className="text-xs text-destructive">{errors.name.message}</p>
+            )}
+          </div>
+
           <div className="space-y-1">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -82,12 +108,28 @@ const LoginPage = () => {
               id="password"
               type="password"
               placeholder="••••••••"
-              autoComplete="current-password"
+              autoComplete="new-password"
               {...register("password")}
             />
             {errors.password && (
               <p className="text-xs text-destructive">
                 {errors.password.message}
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-1">
+            <Label htmlFor="confirmPassword">Confirm password</Label>
+            <Input
+              id="confirmPassword"
+              type="password"
+              placeholder="••••••••"
+              autoComplete="new-password"
+              {...register("confirmPassword")}
+            />
+            {errors.confirmPassword && (
+              <p className="text-xs text-destructive">
+                {errors.confirmPassword.message}
               </p>
             )}
           </div>
@@ -99,14 +141,14 @@ const LoginPage = () => {
           )}
 
           <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting ? "Signing in…" : "Sign in"}
+            {isSubmitting ? "Creating account…" : "Create account"}
           </Button>
         </form>
 
         <p className="text-center text-sm text-muted-foreground">
-          Don&apos;t have an account?{" "}
-          <Link to="/register" className="text-foreground underline-offset-4 hover:underline">
-            Sign up
+          Already have an account?{" "}
+          <Link to="/login" className="text-foreground underline-offset-4 hover:underline">
+            Sign in
           </Link>
         </p>
       </div>
@@ -114,4 +156,4 @@ const LoginPage = () => {
   );
 };
 
-export default LoginPage;
+export default RegisterPage;

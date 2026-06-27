@@ -5,6 +5,7 @@ import MainLayout from "@/layouts/MainLayout";
 import ProtectedRoute from "@/components/ProtectedRoute";
 
 import LoginPage from "@/pages/LoginPage";
+import RegisterPage from "@/pages/RegisterPage";
 import DashboardPage from "@/pages/DashboardPage";
 import TaskListPage from "@/pages/TaskListPage";
 import NewTaskPage from "@/pages/NewTaskPage";
@@ -18,6 +19,7 @@ const App = () => {
         <Routes>
           {/* Public routes */}
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
 
           {/* Protected routes */}
           <Route element={<ProtectedRoute />}>
