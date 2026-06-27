@@ -3,3 +3,6 @@ import type { Task } from "@/types";
 
 export const getTasks = () =>
   api.get<Task[]>("/api/tasks").then((res) => res.data);
+
+export const deleteTask = (id: string) =>
+  api.delete(`/api/tasks/${id}`);
