@@ -1,5 +1,3 @@
-// Shared domain types — expand as features are built
-
 export interface User {
   id: string;
   email: string;
@@ -13,4 +11,14 @@ export interface Task {
   status: "todo" | "in_progress" | "done";
   createdAt: string;
   updatedAt: string;
+}
+
+export interface LoginCredentials {
+  email: string;
+  password: string;
+}
+
+export interface AuthResponse {
+  token: string;
+  user: User;
 }
