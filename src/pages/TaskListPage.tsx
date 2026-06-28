@@ -1,98 +1,102 @@
-import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { Pencil, Trash2, Plus } from "lucide-react";
 
 import { getTasks, deleteTask } from "@/services/taskService";
-import type { Task, TaskPriority, TaskStatus } from "@/types";
+import { getUserOptions, type UserOption } from "@/services/userService";
+import type { Task } from "@/types";
+import { useAuth } from "@/hooks/useAuth";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter,
+  DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
 import TaskStatusBadge from "@/components/TaskStatusBadge";
 import TaskPriorityBadge from "@/components/TaskPriorityBadge";
 
-// ── Filter select ────────────────────────────────────────────────────────────
-
-interface FilterSelectProps {
-  value: string;
-  onChange: (value: string) => void;
-  options: { value: string; label: string }[];
-}
-
-const FilterSelect = ({ value, onChange, options }: FilterSelectProps) => (
-  <select
-    value={value}
-    onChange={(e) => onChange(e.target.value)}
-    className="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-  >
-    {options.map((opt) => (
-      <option key={opt.value} value={opt.value}>
-        {opt.label}
-      </option>
-    ))}
-  </select>
-);
-
-// ── Constants ────────────────────────────────────────────────────────────────
-
-const STATUS_OPTIONS = [
-  { value: "all", label: "All statuses" },
-  { value: "OPEN", label: "Open" },
-  { value: "IN_PROGRESS", label: "In Progress" },
-  { value: "TESTING", label: "Testing" },
-  { value: "DONE", label: "Done" },
-];
-
-const PRIORITY_OPTIONS = [
-  { value: "all", label: "All priorities" },
-  { value: "LOW", label: "Low" },
-  { value: "MEDIUM", label: "Medium" },
-  { value: "HIGH", label: "High" },
-];
-
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 const formatDate = (dateStr?: string) => {
   if (!dateStr) return "—";
   return new Date(dateStr).toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
+    year: "numeric", month: "short", day: "numeric",
   });
 };
 
-// ── Page ─────────────────────────────────────────────────────────────────────
+// ── Page ──────────────────────────────────────────────────────────────────────
 
 const TaskListPage = () => {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
+  const isAdmin = user?.role === "ADMIN";
 
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [priorityFilter, setPriorityFilter] = useState("all");
+  // ── URL param state ──────────────────────────────────────────────────────────
+  const [searchParams, setSearchParams] = useSearchParams();
 
+  const paramStatus     = searchParams.get("status")       ?? "all";
+  const paramPriority   = searchParams.get("priority")     ?? "all";
+  const paramAssignedTo = searchParams.get("assignedToId") ?? "all";
+  const paramQ          = searchParams.get("q")            ?? "";
+
+  // Local controlled input — debounced into the URL `q` param
+  const [searchInput, setSearchInput] = useState(paramQ);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ── Task data ────────────────────────────────────────────────────────────────
+  const [tasks, setTasks]           = useState<Task[]>([]);
+  const [isLoading, setIsLoading]   = useState(true);
+  const [error, setError]           = useState<string | null>(null);
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // ── User options (admin only) ────────────────────────────────────────────────
+  const [userOptions, setUserOptions] = useState<UserOption[]>([]);
+
   useEffect(() => {
-    getTasks()
+    if (!isAdmin) return;
+    getUserOptions().then(setUserOptions).catch(() => {});
+  }, [isAdmin]);
+
+  // ── Fetch tasks whenever URL params change ───────────────────────────────────
+  useEffect(() => {
+    setIsLoading(true);
+    setError(null);
+    const filters: Record<string, string> = {};
+    if (paramQ)                         filters.q            = paramQ;
+    if (paramStatus !== "all")          filters.status       = paramStatus;
+    if (paramPriority !== "all")        filters.priority     = paramPriority;
+    if (paramAssignedTo !== "all")      filters.assignedToId = paramAssignedTo;
+
+    getTasks(filters)
       .then(setTasks)
       .catch(() => setError("Failed to load tasks."))
       .finally(() => setIsLoading(false));
-  }, []);
+  }, [paramQ, paramStatus, paramPriority, paramAssignedTo]);
 
-  const filteredTasks = useMemo(() => {
-    const q = search.toLowerCase();
-    return tasks.filter((t) => {
-      const matchSearch = t.title.toLowerCase().includes(q);
-      const matchStatus = statusFilter === "all" || t.status === (statusFilter as TaskStatus);
-      const matchPriority = priorityFilter === "all" || t.priority === (priorityFilter as TaskPriority);
-      return matchSearch && matchStatus && matchPriority;
+  // ── Filter helpers ───────────────────────────────────────────────────────────
+  const setParam = (key: string, value: string) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (!value || value === "all") next.delete(key);
+      else next.set(key, value);
+      return next;
     });
-  }, [tasks, search, statusFilter, priorityFilter]);
+  };
 
+  const handleSearchChange = (value: string) => {
+    setSearchInput(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => setParam("q", value), 300);
+  };
+
+  // ── Delete ───────────────────────────────────────────────────────────────────
   const handleConfirmDelete = async () => {
     if (!taskToDelete) return;
     setIsDeleting(true);
@@ -114,7 +118,7 @@ const TaskListPage = () => {
         <div>
           <h1 className="text-2xl font-bold">Tasks</h1>
           <p className="text-sm text-muted-foreground">
-            {isLoading ? "Loading…" : `${filteredTasks.length} task${filteredTasks.length !== 1 ? "s" : ""}`}
+            {isLoading ? "Loading…" : `${tasks.length} task${tasks.length !== 1 ? "s" : ""}`}
           </p>
         </div>
         <Button asChild>
@@ -132,23 +136,54 @@ const TaskListPage = () => {
       )}
 
       {/* Filters */}
-      <div className="flex flex-col gap-3 sm:flex-row">
+      <div className="flex flex-wrap gap-3">
         <Input
           placeholder="Search tasks…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="sm:max-w-xs"
+          value={searchInput}
+          onChange={(e) => handleSearchChange(e.target.value)}
+          className="w-full sm:w-64"
         />
-        <FilterSelect
-          value={statusFilter}
-          onChange={setStatusFilter}
-          options={STATUS_OPTIONS}
-        />
-        <FilterSelect
-          value={priorityFilter}
-          onChange={setPriorityFilter}
-          options={PRIORITY_OPTIONS}
-        />
+
+        <Select value={paramStatus} onValueChange={(v) => setParam("status", v)}>
+          <SelectTrigger className="w-[160px]">
+            <SelectValue placeholder="All statuses" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All statuses</SelectItem>
+            <SelectItem value="OPEN">Open</SelectItem>
+            <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+            <SelectItem value="TESTING">Testing</SelectItem>
+            <SelectItem value="DONE">Done</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select value={paramPriority} onValueChange={(v) => setParam("priority", v)}>
+          <SelectTrigger className="w-[160px]">
+            <SelectValue placeholder="All priorities" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All priorities</SelectItem>
+            <SelectItem value="LOW">Low</SelectItem>
+            <SelectItem value="MEDIUM">Medium</SelectItem>
+            <SelectItem value="HIGH">High</SelectItem>
+          </SelectContent>
+        </Select>
+
+        {isAdmin && (
+          <Select value={paramAssignedTo} onValueChange={(v) => setParam("assignedToId", v)}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="All assignees" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All assignees</SelectItem>
+              {userOptions.map((u) => (
+                <SelectItem key={u.id} value={u.id}>
+                  {u.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       {/* Table */}
@@ -175,20 +210,19 @@ const TaskListPage = () => {
                   ))}
                 </TableRow>
               ))
-            ) : filteredTasks.length === 0 ? (
+            ) : tasks.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="py-12 text-center text-muted-foreground">
-                  {tasks.length === 0 ? "No tasks yet." : "No tasks match your filters."}
+                  {searchParams.size > 0
+                    ? "No tasks match your filters."
+                    : "No tasks yet."}
                 </TableCell>
               </TableRow>
             ) : (
-              filteredTasks.map((task) => (
+              tasks.map((task) => (
                 <TableRow key={task.id}>
                   <TableCell className="font-medium">
-                    <Link
-                      to={`/tasks/${task.id}`}
-                      className="hover:underline"
-                    >
+                    <Link to={`/tasks/${task.id}`} className="hover:underline">
                       {task.title}
                     </Link>
                   </TableCell>
@@ -233,7 +267,9 @@ const TaskListPage = () => {
             <DialogTitle>Delete task</DialogTitle>
             <DialogDescription>
               Are you sure you want to delete{" "}
-              <span className="font-medium text-foreground">"{taskToDelete?.title}"</span>?
+              <span className="font-medium text-foreground">
+                &quot;{taskToDelete?.title}&quot;
+              </span>?{" "}
               This action cannot be undone.
             </DialogDescription>
           </DialogHeader>

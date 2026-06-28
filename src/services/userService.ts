@@ -11,6 +11,14 @@ const unwrap = <T>(raw: unknown): T => {
 export const getUsers = () =>
   api.get<unknown>("/api/users").then((res) => unwrap<User[]>(res.data));
 
+export interface UserOption {
+  id: string;
+  name: string;
+}
+
+export const getUserOptions = () =>
+  api.get<unknown>("/api/users/options").then((res) => unwrap<UserOption[]>(res.data));
+
 export const getMe = () =>
   api.get<unknown>("/api/users/me").then((res) => unwrap<User>(res.data));
 

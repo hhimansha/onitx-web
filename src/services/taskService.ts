@@ -15,6 +15,7 @@ export interface TaskFilters {
   q?: string;
   status?: string;
   priority?: string;
+  assignedToId?: string;
 }
 
 export const getTasks = (filters?: TaskFilters) =>
