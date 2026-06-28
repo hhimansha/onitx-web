@@ -1,21 +1,15 @@
 import {
-  ClipboardList,
-  Circle,
-  Timer,
-  FlaskConical,
-  CheckCircle2,
-  AlertTriangle,
-  CalendarClock,
-  CalendarDays,
-  ArrowUp,
-  Minus,
-  ArrowDown,
-  Users,
-  type LucideIcon,
+  ClipboardList, Circle, Timer, AlertTriangle,
+  CalendarClock, CheckCircle2, Users, type LucideIcon,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useDashboardStats } from "@/hooks/useDashboardStats";
+import { useDashboard } from "@/hooks/useDashboard";
 import { useAuth } from "@/hooks/useAuth";
+import { StatusDonut } from "@/components/charts/StatusDonut";
+import { PriorityBar } from "@/components/charts/PriorityBar";
+import { CreationTrend } from "@/components/charts/CreationTrend";
+import { DueTimeline } from "@/components/charts/DueTimeline";
+import { TopAssignees } from "@/components/charts/TopAssignees";
 
 // ── Stat card ─────────────────────────────────────────────────────────────────
 
@@ -23,18 +17,16 @@ interface StatCardProps {
   title: string;
   value: number | undefined;
   icon: LucideIcon;
-  loading: boolean;
   iconClass?: string;
   valueClass?: string;
+  loading: boolean;
 }
 
 const StatCard = ({
-  title,
-  value,
-  icon: Icon,
-  loading,
+  title, value, icon: Icon,
   iconClass = "text-muted-foreground",
   valueClass = "",
+  loading,
 }: StatCardProps) => (
   <Card>
     <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -44,19 +36,40 @@ const StatCard = ({
     <CardContent>
       {loading ? (
         <div className="h-8 w-16 animate-pulse rounded-md bg-muted" />
-      ) : value === undefined ? (
-        <p className="text-sm text-muted-foreground">—</p>
       ) : (
-        <p className={`text-3xl font-bold ${valueClass}`}>{value}</p>
+        <p className={`text-3xl font-bold ${valueClass}`}>{value ?? 0}</p>
       )}
     </CardContent>
   </Card>
 );
 
-// ── Skeleton grid (reused for each section) ───────────────────────────────────
+// ── Chart card shell ──────────────────────────────────────────────────────────
 
-const SkeletonGrid = ({ count, cols }: { count: number; cols: string }) => (
-  <div className={`grid gap-4 ${cols}`}>
+const ChartCard = ({
+  title, children, loading,
+}: {
+  title: string;
+  children: React.ReactNode;
+  loading: boolean;
+}) => (
+  <Card>
+    <CardHeader className="pb-2">
+      <CardTitle className="text-sm font-semibold">{title}</CardTitle>
+    </CardHeader>
+    <CardContent>
+      {loading ? (
+        <div className="h-[220px] animate-pulse rounded-md bg-muted" />
+      ) : (
+        children
+      )}
+    </CardContent>
+  </Card>
+);
+
+// ── Stat row skeleton ─────────────────────────────────────────────────────────
+
+const StatSkeleton = ({ count }: { count: number }) => (
+  <>
     {Array.from({ length: count }).map((_, i) => (
       <Card key={i}>
         <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -68,24 +81,19 @@ const SkeletonGrid = ({ count, cols }: { count: number; cols: string }) => (
         </CardContent>
       </Card>
     ))}
-  </div>
-);
-
-// ── Section wrapper ───────────────────────────────────────────────────────────
-
-const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <div className="space-y-4">
-    <h2 className="text-base font-semibold text-foreground">{title}</h2>
-    {children}
-  </div>
+  </>
 );
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 const DashboardPage = () => {
-  const { stats, isLoading, error } = useDashboardStats();
+  const { data, isLoading, error } = useDashboard();
   const { user } = useAuth();
-  const isAdmin = user?.role === "ADMIN";
+
+  // Per the backend spec: totalUsers is absent for non-admins
+  const isAdmin = data?.summary.totalUsers !== undefined;
+  const s = data?.summary;
+  const c = data?.charts;
 
   return (
     <div className="space-y-8">
@@ -99,130 +107,113 @@ const DashboardPage = () => {
 
       {error && (
         <p className="rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive">
-          {error}
+          Failed to load dashboard data.
         </p>
       )}
 
-      {/* ── Overview ── */}
-      <Section title="Overview">
-        {isLoading ? (
-          <SkeletonGrid count={isAdmin ? 5 : 4} cols="grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5" />
-        ) : (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-            <StatCard
-              title="Total Tasks"
-              value={stats?.totalTasks}
-              icon={ClipboardList}
-              loading={false}
-            />
-            <StatCard
-              title="Overdue"
-              value={stats?.overdueTasks}
-              icon={AlertTriangle}
-              loading={false}
-              iconClass={stats?.overdueTasks ? "text-destructive" : "text-muted-foreground"}
-              valueClass={stats?.overdueTasks ? "text-destructive" : ""}
-            />
-            <StatCard
-              title="Due Today"
-              value={stats?.dueTodayTasks}
-              icon={CalendarClock}
-              loading={false}
-              iconClass={stats?.dueTodayTasks ? "text-orange-500" : "text-muted-foreground"}
-              valueClass={stats?.dueTodayTasks ? "text-orange-500" : ""}
-            />
-            <StatCard
-              title="Due This Week"
-              value={stats?.dueThisWeekTasks}
-              icon={CalendarDays}
-              loading={false}
-              iconClass="text-muted-foreground"
-            />
-            {isAdmin && (
+      {/* ── Row 1 — Stat cards ── */}
+      <section className="space-y-3">
+        <h2 className="text-base font-semibold">Overview</h2>
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+          {isLoading ? (
+            <StatSkeleton count={isAdmin ? 6 : 5} />
+          ) : (
+            <>
+              {isAdmin && (
+                <StatCard
+                  title="Total Users"
+                  value={s?.totalUsers}
+                  icon={Users}
+                  iconClass="text-primary"
+                  loading={false}
+                />
+              )}
               <StatCard
-                title="Total Users"
-                value={stats?.totalUsers}
-                icon={Users}
+                title="Total Tasks"
+                value={s?.totalTasks}
+                icon={ClipboardList}
                 loading={false}
-                iconClass="text-primary"
               />
-            )}
-          </div>
-        )}
-      </Section>
+              <StatCard
+                title="Open"
+                value={s?.openTasks}
+                icon={Circle}
+                iconClass="text-blue-500"
+                valueClass="text-blue-600"
+                loading={false}
+              />
+              <StatCard
+                title="In Progress"
+                value={s?.inProgressTasks}
+                icon={Timer}
+                iconClass="text-amber-500"
+                valueClass="text-amber-600"
+                loading={false}
+              />
+              <StatCard
+                title="Overdue"
+                value={s?.overdueTasks}
+                icon={AlertTriangle}
+                iconClass={s?.overdueTasks ? "text-destructive" : "text-muted-foreground"}
+                valueClass={s?.overdueTasks ? "text-destructive" : ""}
+                loading={false}
+              />
+              <StatCard
+                title="Due Today"
+                value={s?.tasksDueToday}
+                icon={CalendarClock}
+                iconClass={s?.tasksDueToday ? "text-orange-500" : "text-muted-foreground"}
+                valueClass={s?.tasksDueToday ? "text-orange-500" : ""}
+                loading={false}
+              />
+              <StatCard
+                title="Completed"
+                value={s?.doneTasks}
+                icon={CheckCircle2}
+                iconClass="text-green-500"
+                valueClass="text-green-600"
+                loading={false}
+              />
+            </>
+          )}
+        </div>
+      </section>
 
-      {/* ── Task Status ── */}
-      <Section title="Task Status">
-        {isLoading ? (
-          <SkeletonGrid count={4} cols="grid-cols-2 sm:grid-cols-4" />
-        ) : (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            <StatCard
-              title="Open"
-              value={stats?.openTasks}
-              icon={Circle}
-              loading={false}
-              iconClass="text-slate-500"
-            />
-            <StatCard
-              title="In Progress"
-              value={stats?.inProgressTasks}
-              icon={Timer}
-              loading={false}
-              iconClass="text-blue-500"
-              valueClass="text-blue-600"
-            />
-            <StatCard
-              title="Testing"
-              value={stats?.testingTasks}
-              icon={FlaskConical}
-              loading={false}
-              iconClass="text-violet-500"
-              valueClass="text-violet-600"
-            />
-            <StatCard
-              title="Done"
-              value={stats?.doneTasks}
-              icon={CheckCircle2}
-              loading={false}
-              iconClass="text-green-500"
-              valueClass="text-green-600"
-            />
-          </div>
-        )}
-      </Section>
+      {/* ── Row 2 — Status donut + Priority bar ── */}
+      <section className="space-y-3">
+        <h2 className="text-base font-semibold">Task Status</h2>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <ChartCard title="Status Breakdown" loading={isLoading}>
+            <StatusDonut data={c?.statusBreakdown ?? []} />
+          </ChartCard>
+          <ChartCard title="Priority Breakdown" loading={isLoading}>
+            <PriorityBar data={c?.priorityBreakdown ?? []} />
+          </ChartCard>
+        </div>
+      </section>
 
-      {/* ── Priority Breakdown ── */}
-      <Section title="Priority Breakdown">
-        {isLoading ? (
-          <SkeletonGrid count={3} cols="grid-cols-1 sm:grid-cols-3" />
-        ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <StatCard
-              title="High Priority"
-              value={stats?.highPriorityTasks}
-              icon={ArrowUp}
-              loading={false}
-              iconClass={stats?.highPriorityTasks ? "text-destructive" : "text-muted-foreground"}
-              valueClass={stats?.highPriorityTasks ? "text-destructive" : ""}
-            />
-            <StatCard
-              title="Medium Priority"
-              value={stats?.mediumPriorityTasks}
-              icon={Minus}
-              loading={false}
-              iconClass="text-orange-500"
-            />
-            <StatCard
-              title="Low Priority"
-              value={stats?.lowPriorityTasks}
-              icon={ArrowDown}
-              loading={false}
-              iconClass="text-green-500"
-            />
-          </div>
-        )}
-      </Section>
+      {/* ── Row 3 — 7-day creation trend (full width) ── */}
+      <section className="space-y-3">
+        <h2 className="text-base font-semibold">Activity</h2>
+        <ChartCard title="Tasks Created — Last 7 Days" loading={isLoading}>
+          <CreationTrend data={c?.tasksCreatedByDay ?? []} />
+        </ChartCard>
+      </section>
+
+      {/* ── Row 4 — Due timeline + Top assignees (admin) ── */}
+      <section className="space-y-3">
+        <h2 className="text-base font-semibold">Due Dates &amp; Assignments</h2>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <ChartCard title="Due Timeline" loading={isLoading}>
+            <DueTimeline data={c?.dueTimeline ?? []} />
+          </ChartCard>
+          {isAdmin && (
+            <ChartCard title="Top Assignees" loading={isLoading}>
+              <TopAssignees data={c?.topAssignees ?? []} />
+            </ChartCard>
+          )}
+        </div>
+      </section>
     </div>
   );
 };
