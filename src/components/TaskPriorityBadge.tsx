@@ -2,9 +2,9 @@ import { Badge } from "@/components/ui/badge";
 import type { TaskPriority } from "@/types";
 
 const config: Record<TaskPriority, { label: string; variant: "secondary" | "warning" | "destructive" }> = {
-  low: { label: "Low", variant: "secondary" },
-  medium: { label: "Medium", variant: "warning" },
-  high: { label: "High", variant: "destructive" },
+  LOW: { label: "Low", variant: "secondary" },
+  MEDIUM: { label: "Medium", variant: "warning" },
+  HIGH: { label: "High", variant: "destructive" },
 };
 
 const TaskPriorityBadge = ({ priority }: { priority: TaskPriority }) => {

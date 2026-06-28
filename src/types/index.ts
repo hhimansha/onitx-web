@@ -6,8 +6,8 @@ export interface User {
   createdAt: string;
 }
 
-export type TaskStatus = "todo" | "in_progress" | "done";
-export type TaskPriority = "low" | "medium" | "high";
+export type TaskStatus = "OPEN" | "IN_PROGRESS" | "TESTING" | "DONE";
+export type TaskPriority = "LOW" | "MEDIUM" | "HIGH";
 
 export interface Task {
   id: string;

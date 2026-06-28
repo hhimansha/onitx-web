@@ -38,16 +38,17 @@ const FilterSelect = ({ value, onChange, options }: FilterSelectProps) => (
 
 const STATUS_OPTIONS = [
   { value: "all", label: "All statuses" },
-  { value: "todo", label: "Open" },
-  { value: "in_progress", label: "In Progress" },
-  { value: "done", label: "Done" },
+  { value: "OPEN", label: "Open" },
+  { value: "IN_PROGRESS", label: "In Progress" },
+  { value: "TESTING", label: "Testing" },
+  { value: "DONE", label: "Done" },
 ];
 
 const PRIORITY_OPTIONS = [
   { value: "all", label: "All priorities" },
-  { value: "low", label: "Low" },
-  { value: "medium", label: "Medium" },
-  { value: "high", label: "High" },
+  { value: "LOW", label: "Low" },
+  { value: "MEDIUM", label: "Medium" },
+  { value: "HIGH", label: "High" },
 ];
 
 // ── Helpers ──────────────────────────────────────────────────────────────────

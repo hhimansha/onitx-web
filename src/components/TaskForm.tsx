@@ -29,8 +29,8 @@ export const taskSchema = z.object({
     .min(1, "Title is required")
     .max(100, "Title must be under 100 characters"),
   description: z.string().optional(),
-  priority: z.enum(["low", "medium", "high"]),
-  status: z.enum(["todo", "in_progress", "done"]),
+  priority: z.enum(["LOW", "MEDIUM", "HIGH"]),
+  status: z.enum(["OPEN", "IN_PROGRESS", "TESTING", "DONE"]),
   dueDate: z.string().optional(),
   assignedToId: z.string().optional(),
 });
@@ -73,8 +73,8 @@ const TaskForm = ({ mode, defaultValues, onSubmit }: TaskFormProps) => {
     defaultValues: {
       title: "",
       description: "",
-      priority: "medium",
-      status: "todo",
+      priority: "MEDIUM",
+      status: "OPEN",
       dueDate: "",
       assignedToId: "",
       ...defaultValues,
@@ -152,9 +152,9 @@ const TaskForm = ({ mode, defaultValues, onSubmit }: TaskFormProps) => {
                 <FormLabel>Priority</FormLabel>
                 <FormControl>
                   <NativeSelect {...field}>
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
+                    <option value="LOW">Low</option>
+                    <option value="MEDIUM">Medium</option>
+                    <option value="HIGH">High</option>
                   </NativeSelect>
                 </FormControl>
                 <FormMessage />
@@ -170,9 +170,10 @@ const TaskForm = ({ mode, defaultValues, onSubmit }: TaskFormProps) => {
                 <FormLabel>Status</FormLabel>
                 <FormControl>
                   <NativeSelect {...field}>
-                    <option value="todo">Open</option>
-                    <option value="in_progress">In Progress</option>
-                    <option value="done">Done</option>
+                    <option value="OPEN">Open</option>
+                    <option value="IN_PROGRESS">In Progress</option>
+                    <option value="TESTING">Testing</option>
+                    <option value="DONE">Done</option>
                   </NativeSelect>
                 </FormControl>
                 <FormMessage />

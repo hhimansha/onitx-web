@@ -1,10 +1,11 @@
 import { Badge } from "@/components/ui/badge";
 import type { TaskStatus } from "@/types";
 
-const config: Record<TaskStatus, { label: string; variant: "secondary" | "info" | "success" }> = {
-  todo: { label: "Open", variant: "secondary" },
-  in_progress: { label: "In Progress", variant: "info" },
-  done: { label: "Done", variant: "success" },
+const config: Record<TaskStatus, { label: string; variant: "secondary" | "info" | "warning" | "success" }> = {
+  OPEN: { label: "Open", variant: "secondary" },
+  IN_PROGRESS: { label: "In Progress", variant: "info" },
+  TESTING: { label: "Testing", variant: "warning" },
+  DONE: { label: "Done", variant: "success" },
 };
 
 const TaskStatusBadge = ({ status }: { status: TaskStatus }) => {
