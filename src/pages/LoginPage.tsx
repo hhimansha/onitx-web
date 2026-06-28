@@ -4,7 +4,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Navigate, Link } from "react-router-dom";
 import axios from "axios";
-import { GoogleLogin } from "@react-oauth/google";
 
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -19,7 +18,7 @@ const loginSchema = z.object({
 type LoginFormData = z.infer<typeof loginSchema>;
 
 const LoginPage = () => {
-  const { login, googleLogin, isAuthenticated } = useAuth();
+  const { login, isAuthenticated } = useAuth();
   const [apiError, setApiError] = useState<string | null>(null);
 
   const {
@@ -45,22 +44,6 @@ const LoginPage = () => {
         );
       } else {
         setApiError("An unexpected error occurred.");
-      }
-    }
-  };
-
-  const handleGoogleSuccess = async (credentialResponse: { credential?: string }) => {
-    if (!credentialResponse.credential) return;
-    setApiError(null);
-    try {
-      await googleLogin(credentialResponse.credential);
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
-        setApiError(
-          (err.response?.data as { message?: string })?.message ?? "Google sign-in failed."
-        );
-      } else {
-        setApiError("Google sign-in failed.");
       }
     }
   };
@@ -91,15 +74,7 @@ const LoginPage = () => {
           </div>
 
           <div className="space-y-1">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="password">Password</Label>
-              <Link
-                to="/forgot-password"
-                className="text-xs text-muted-foreground underline-offset-4 hover:underline"
-              >
-                Forgot password?
-              </Link>
-            </div>
+            <Label htmlFor="password">Password</Label>
             <Input
               id="password"
               type="password"
@@ -124,23 +99,6 @@ const LoginPage = () => {
             {isSubmitting ? "Signing in…" : "Sign in"}
           </Button>
         </form>
-
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">or</span>
-          </div>
-        </div>
-
-        <div className="flex justify-center">
-          <GoogleLogin
-            onSuccess={handleGoogleSuccess}
-            onError={() => setApiError("Google sign-in failed.")}
-            useOneTap
-          />
-        </div>
 
         <p className="text-center text-sm text-muted-foreground">
           Don&apos;t have an account?{" "}
