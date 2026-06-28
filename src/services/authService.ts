@@ -19,8 +19,14 @@ const extract = (raw: RawAuthResponse): AuthResponse => {
 export const login = (credentials: LoginCredentials) =>
   api.post<RawAuthResponse>("/api/auth/login", credentials).then((res) => extract(res.data));
 
-export const register = (credentials: RegisterCredentials) =>
-  api.post<RawAuthResponse>("/api/auth/register", credentials).then((res) => extract(res.data));
+export const register = async (credentials: RegisterCredentials): Promise<AuthResponse | null> => {
+  const res = await api.post<RawAuthResponse>("/api/auth/register", credentials);
+  const raw = res.data;
+  const token = raw.token ?? raw.data?.token;
+  const user = raw.user ?? raw.data?.user;
+  if (!token || !user) return null; // registration succeeded but backend didn't issue a token
+  return { token, user };
+};
 
 export const getMe = () =>
   api.get<RawAuthResponse>("/api/auth/me").then((res) => {

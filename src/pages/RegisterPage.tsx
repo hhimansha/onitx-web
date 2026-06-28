@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Navigate, Link } from "react-router-dom";
+import { Navigate, Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 
 import { useAuth } from "@/hooks/useAuth";
@@ -26,6 +26,7 @@ type RegisterFormData = z.infer<typeof registerSchema>;
 
 const RegisterPage = () => {
   const { register: registerUser, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const [apiError, setApiError] = useState<string | null>(null);
 
   const {
@@ -49,7 +50,11 @@ const RegisterPage = () => {
         email: data.email,
         password: data.password,
       });
-      // Same as LoginPage — let isAuthenticated guard handle the redirect.
+      // If backend returned a token, isAuthenticated is now true and the
+      // guard above redirects to /dashboard. If not, send to /login.
+      if (!isAuthenticated) {
+        navigate("/login", { replace: true });
+      }
     } catch (err) {
       if (axios.isAxiosError(err)) {
         setApiError(

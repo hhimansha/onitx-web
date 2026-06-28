@@ -46,7 +46,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const register = async (credentials: RegisterCredentials) => {
     const data = await authService.register(credentials);
-    applyAuth(data.token, data.user);
+    if (data) applyAuth(data.token, data.user);
+    // if data is null, registration succeeded but no token — caller handles redirect
   };
 
   const logout = () => {
