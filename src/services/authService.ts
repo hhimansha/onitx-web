@@ -28,6 +28,12 @@ export const register = async (credentials: RegisterCredentials): Promise<AuthRe
   return { token, user };
 };
 
+export const forgotPassword = (email: string) =>
+  api.post("/api/auth/forgot-password", { email });
+
+export const resetPassword = (token: string, password: string) =>
+  api.post("/api/auth/reset-password", { token, password });
+
 export const getMe = () =>
   api.get<RawAuthResponse>("/api/auth/me").then((res) => {
     const raw = res.data as { user?: User; data?: { user: User } };
