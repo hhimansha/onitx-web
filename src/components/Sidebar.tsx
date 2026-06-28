@@ -1,10 +1,11 @@
 import { NavLink } from "react-router-dom";
-import { LayoutDashboard, ListChecks, X } from "lucide-react";
+import { LayoutDashboard, ListChecks, User, X } from "lucide-react";
 import { cn } from "@/utils/cn";
 
 const navItems = [
   { label: "Dashboard", to: "/dashboard", icon: LayoutDashboard },
   { label: "Tasks", to: "/tasks", icon: ListChecks },
+  { label: "Profile", to: "/profile", icon: User },
 ];
 
 interface SidebarProps {

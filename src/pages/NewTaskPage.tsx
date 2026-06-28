@@ -9,7 +9,7 @@ const NewTaskPage = () => {
     const task = await createTask({
       ...data,
       dueDate: data.dueDate || undefined,
-      assignedToId: data.assignedToId || undefined,
+      assignedToIds: data.assignedToIds?.length ? data.assignedToIds : [],
     });
     navigate(`/tasks/${task.id}`, { replace: true });
   };

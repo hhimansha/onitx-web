@@ -32,7 +32,7 @@ export const taskSchema = z.object({
   priority: z.enum(["LOW", "MEDIUM", "HIGH"]),
   status: z.enum(["OPEN", "IN_PROGRESS", "TESTING", "DONE"]),
   dueDate: z.string().optional(),
-  assignedToId: z.string().optional(),
+  assignedToIds: z.array(z.string()).optional(),
 });
 
 export type TaskFormValues = z.infer<typeof taskSchema>;
@@ -76,7 +76,7 @@ const TaskForm = ({ mode, defaultValues, onSubmit }: TaskFormProps) => {
       priority: "MEDIUM",
       status: "OPEN",
       dueDate: "",
-      assignedToId: "",
+      assignedToIds: [],
       ...defaultValues,
     },
   });
@@ -200,19 +200,41 @@ const TaskForm = ({ mode, defaultValues, onSubmit }: TaskFormProps) => {
 
           <FormField
             control={form.control}
-            name="assignedToId"
+            name="assignedToIds"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Assigned User</FormLabel>
+                <FormLabel>Assignees</FormLabel>
                 <FormControl>
-                  <NativeSelect {...field}>
-                    <option value="">Unassigned</option>
-                    {users.map((u) => (
-                      <option key={u.id} value={u.id}>
-                        {u.name}
-                      </option>
-                    ))}
-                  </NativeSelect>
+                  <div className="max-h-40 overflow-y-auto rounded-md border border-input bg-background p-3 space-y-2">
+                    {users.length === 0 ? (
+                      <p className="text-xs text-muted-foreground">No users available</p>
+                    ) : (
+                      users.map((u) => {
+                        const checked = field.value?.includes(u.id) ?? false;
+                        return (
+                          <label key={u.id} className="flex items-center gap-2 cursor-pointer text-sm">
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={(e) => {
+                                const current = field.value ?? [];
+                                field.onChange(
+                                  e.target.checked
+                                    ? [...current, u.id]
+                                    : current.filter((id) => id !== u.id)
+                                );
+                              }}
+                              className="h-4 w-4 rounded border-input accent-primary"
+                            />
+                            <span>{u.name}</span>
+                            {u.designation && (
+                              <span className="text-xs text-muted-foreground">· {u.designation}</span>
+                            )}
+                          </label>
+                        );
+                      })
+                    )}
+                  </div>
                 </FormControl>
                 <FormMessage />
               </FormItem>

@@ -3,7 +3,7 @@ import { getTasks } from "@/services/taskService";
 
 interface TaskStats {
   total: number;
-  todo: number;
+  open: number;
   inProgress: number;
   done: number;
 }
@@ -18,9 +18,9 @@ export const useTaskStats = () => {
       .then((tasks) => {
         setStats({
           total: tasks.length,
-          todo: tasks.filter((t) => t.status === "todo").length,
-          inProgress: tasks.filter((t) => t.status === "in_progress").length,
-          done: tasks.filter((t) => t.status === "done").length,
+          open: tasks.filter((t) => t.status === "OPEN").length,
+          inProgress: tasks.filter((t) => t.status === "IN_PROGRESS").length,
+          done: tasks.filter((t) => t.status === "DONE").length,
         });
       })
       .catch(() => setError("Failed to load task stats."))

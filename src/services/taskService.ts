@@ -11,8 +11,14 @@ const unwrap = <T>(raw: unknown): T => {
   return raw as T;
 };
 
-export const getTasks = () =>
-  api.get<unknown>("/api/tasks").then((res) => unwrap<Task[]>(res.data));
+export interface TaskFilters {
+  q?: string;
+  status?: string;
+  priority?: string;
+}
+
+export const getTasks = (filters?: TaskFilters) =>
+  api.get<unknown>("/api/tasks", { params: filters }).then((res) => unwrap<Task[]>(res.data));
 
 export const getTask = (id: string) =>
   api.get<unknown>(`/api/tasks/${id}`).then((res) => unwrap<Task>(res.data));

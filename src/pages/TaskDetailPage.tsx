@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import TaskStatusBadge from "@/components/TaskStatusBadge";
 import TaskPriorityBadge from "@/components/TaskPriorityBadge";
+import CommentSection from "@/components/CommentSection";
 
 const formatDate = (iso?: string) => {
   if (!iso) return "—";
@@ -121,11 +122,13 @@ const TaskDetailPage = () => {
             <DetailRow label="Due Date">
               {formatDate(task.dueDate)}
             </DetailRow>
-            <DetailRow label="Creator">
-              {task.creator?.name ?? "—"}
+            <DetailRow label="Created by">
+              {task.createdBy?.name ?? "—"}
             </DetailRow>
-            <DetailRow label="Assignee">
-              {task.assignee?.name ?? "Unassigned"}
+            <DetailRow label="Assignees">
+              {task.assignments && task.assignments.length > 0
+                ? task.assignments.map((a) => a.user.name).join(", ")
+                : "Unassigned"}
             </DetailRow>
             <DetailRow label="Created">
               {formatDate(task.createdAt)}
@@ -133,6 +136,8 @@ const TaskDetailPage = () => {
           </CardContent>
         </Card>
       </div>
+
+      <CommentSection taskId={task.id} />
     </div>
   );
 };

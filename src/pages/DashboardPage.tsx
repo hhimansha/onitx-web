@@ -52,7 +52,7 @@ const DashboardPage = () => {
         />
         <StatCard
           title="Open"
-          value={stats?.todo}
+          value={stats?.open}
           icon={Circle}
           loading={isLoading}
         />

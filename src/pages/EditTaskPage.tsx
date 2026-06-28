@@ -30,7 +30,7 @@ const EditTaskPage = () => {
     await updateTask(id!, {
       ...data,
       dueDate: data.dueDate || undefined,
-      assignedToId: data.assignedToId || undefined,
+      assignedToIds: data.assignedToIds ?? [],
     });
     navigate(`/tasks/${id}`, { replace: true });
   };
@@ -67,7 +67,7 @@ const EditTaskPage = () => {
           priority: task.priority,
           status: task.status,
           dueDate: toDateInput(task.dueDate),
-          assignedToId: task.assignee?.id ?? "",
+          assignedToIds: task.assignments?.map((a) => a.user.id) ?? [],
         }}
         onSubmit={handleSubmit}
       />
