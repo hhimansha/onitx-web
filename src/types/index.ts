@@ -63,6 +63,13 @@ export interface RegisterCredentials {
   password: string;
 }
 
+export interface UserWithStats extends User {
+  taskCount?: number;
+  openTasks?: number;
+  inProgressTasks?: number;
+  doneTasks?: number;
+}
+
 export interface AuthResponse {
   token: string;
   user: User;

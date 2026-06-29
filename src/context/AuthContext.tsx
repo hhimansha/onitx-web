@@ -9,6 +9,7 @@ interface AuthContextValue {
   login: (credentials: LoginCredentials) => Promise<void>;
   register: (credentials: RegisterCredentials) => Promise<void>;
   logout: () => void;
+  updateUser: (user: User) => void;
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null);
@@ -50,6 +51,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // if data is null, registration succeeded but no token — caller handles redirect
   };
 
+  const updateUser = (updated: User) => {
+    localStorage.setItem("user", JSON.stringify(updated));
+    setUser(updated);
+  };
+
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
@@ -59,7 +65,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <AuthContext.Provider
-      value={{ user, token, isAuthenticated: Boolean(token), login, register, logout }}
+      value={{ user, token, isAuthenticated: Boolean(token), login, register, logout, updateUser }}
     >
       {children}
     </AuthContext.Provider>

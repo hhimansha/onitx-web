@@ -3,28 +3,38 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import axios from "axios";
+import { toast } from "sonner";
 
 import { getMe, updateMe } from "@/services/userService";
 import type { User } from "@/types";
+import { useAuth } from "@/hooks/useAuth";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+
+const getInitials = (name: string) =>
+  name
+    .split(" ")
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase();
 
 const schema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Invalid email address"),
   designation: z.string().optional(),
-  profileImage: z.string().url("Must be a valid URL").optional().or(z.literal("")),
 });
 
 type FormData = z.infer<typeof schema>;
 
 const ProfilePage = () => {
+  const { updateUser } = useAuth();
   const [profile, setProfile] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [success, setSuccess] = useState(false);
-  const [apiError, setApiError] = useState<string | null>(null);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
 
   const {
     register,
@@ -41,49 +51,42 @@ const ProfilePage = () => {
           name: user.name,
           email: user.email,
           designation: user.designation ?? "",
-          profileImage: user.profileImage ?? "",
         });
       })
-      .catch(() => setApiError("Failed to load profile."))
-      .finally(() => setIsLoading(false));
+      .catch(() => toast.error("Failed to load profile."))
+      .finally(() => setIsLoadingProfile(false));
   }, [reset]);
 
   const onSubmit = async (data: FormData) => {
-    setApiError(null);
-    setSuccess(false);
     try {
       const updated = await updateMe({
         name: data.name,
         email: data.email,
         designation: data.designation || undefined,
-        profileImage: data.profileImage || undefined,
       });
+      updateUser(updated);
       setProfile(updated);
       reset({
         name: updated.name,
         email: updated.email,
         designation: updated.designation ?? "",
-        profileImage: updated.profileImage ?? "",
       });
-      setSuccess(true);
+      toast.success("Profile updated.");
     } catch (err) {
-      if (axios.isAxiosError(err)) {
-        setApiError(
-          (err.response?.data as { message?: string })?.message ??
+      const msg =
+        axios.isAxiosError(err)
+          ? (err.response?.data as { message?: string })?.message ??
             "Failed to update profile."
-        );
-      } else {
-        setApiError("An unexpected error occurred.");
-      }
+          : "An unexpected error occurred.";
+      toast.error(msg);
     }
   };
 
-  if (isLoading) {
+  if (isLoadingProfile) {
     return (
       <div className="mx-auto max-w-lg space-y-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-10 animate-pulse rounded-md bg-muted" />
-        ))}
+        <div className="h-8 w-32 animate-pulse rounded bg-muted" />
+        <div className="h-64 animate-pulse rounded-xl bg-muted" />
       </div>
     );
   }
@@ -96,23 +99,22 @@ const ProfilePage = () => {
       </div>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="pb-4">
           <CardTitle className="text-base">Account information</CardTitle>
         </CardHeader>
-        <CardContent>
-          {/* Avatar preview */}
-          {profile?.profileImage && (
-            <div className="mb-6 flex justify-center">
-              <img
-                src={profile.profileImage}
-                alt={profile.name}
-                className="h-20 w-20 rounded-full object-cover border"
-              />
-            </div>
-          )}
+        <CardContent className="space-y-5">
+          {/* Avatar display */}
+          <div className="flex justify-center">
+            <Avatar className="h-20 w-20 ring-2 ring-border ring-offset-2 ring-offset-background">
+              <AvatarImage src={profile?.profileImage ?? undefined} alt={profile?.name} />
+              <AvatarFallback className="text-xl font-semibold">
+                {profile ? getInitials(profile.name) : "?"}
+              </AvatarFallback>
+            </Avatar>
+          </div>
 
           <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <Label htmlFor="name">Name</Label>
               <Input id="name" {...register("name")} />
               {errors.name && (
@@ -120,7 +122,7 @@ const ProfilePage = () => {
               )}
             </div>
 
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <Label htmlFor="email">Email</Label>
               <Input id="email" type="email" {...register("email")} />
               {errors.email && (
@@ -128,43 +130,19 @@ const ProfilePage = () => {
               )}
             </div>
 
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <Label htmlFor="designation">Designation</Label>
-              <Input id="designation" placeholder="e.g. Software Engineer" {...register("designation")} />
+              <Input
+                id="designation"
+                placeholder="e.g. Software Engineer"
+                {...register("designation")}
+              />
               {errors.designation && (
                 <p className="text-xs text-destructive">{errors.designation.message}</p>
               )}
             </div>
 
-            <div className="space-y-1">
-              <Label htmlFor="profileImage">Profile image URL</Label>
-              <Input
-                id="profileImage"
-                type="url"
-                placeholder="https://example.com/avatar.jpg"
-                {...register("profileImage")}
-              />
-              <p className="text-xs text-muted-foreground">
-                Upload your image to a CDN first, then paste the URL here.
-              </p>
-              {errors.profileImage && (
-                <p className="text-xs text-destructive">{errors.profileImage.message}</p>
-              )}
-            </div>
-
-            {apiError && (
-              <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                {apiError}
-              </p>
-            )}
-
-            {success && (
-              <p className="rounded-md bg-green-500/10 px-3 py-2 text-sm text-green-700">
-                Profile updated successfully.
-              </p>
-            )}
-
-            <div className="flex justify-end">
+            <div className="flex justify-end pt-2">
               <Button type="submit" disabled={isSubmitting || !isDirty}>
                 {isSubmitting ? "Saving…" : "Save changes"}
               </Button>

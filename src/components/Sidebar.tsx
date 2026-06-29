@@ -1,12 +1,8 @@
-import { NavLink } from "react-router-dom";
-import { LayoutDashboard, ListChecks, User, X } from "lucide-react";
+import { NavLink, useNavigate } from "react-router-dom";
+import { LayoutDashboard, ListChecks, User, Users, X, LogOut } from "lucide-react";
 import { cn } from "@/utils/cn";
-
-const navItems = [
-  { label: "Dashboard", to: "/dashboard", icon: LayoutDashboard },
-  { label: "Tasks", to: "/tasks", icon: ListChecks },
-  { label: "Profile", to: "/profile", icon: User },
-];
+import { useAuth } from "@/hooks/useAuth";
+import { useTheme } from "@/context/ThemeContext";
 
 interface SidebarProps {
   open: boolean;
@@ -14,6 +10,23 @@ interface SidebarProps {
 }
 
 const Sidebar = ({ open, onClose }: SidebarProps) => {
+  const { user, logout } = useAuth();
+  const { theme } = useTheme();
+  const navigate = useNavigate();
+  const isAdmin = user?.role === "ADMIN";
+
+  const navItems = [
+    { label: "Dashboard", to: "/dashboard", icon: LayoutDashboard },
+    { label: "Tasks",     to: "/tasks",     icon: ListChecks },
+    ...(isAdmin ? [{ label: "Users", to: "/users", icon: Users }] : []),
+    { label: "Profile",   to: "/profile",   icon: User },
+  ];
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login", { replace: true });
+  };
+
   return (
     <>
       {/* Mobile backdrop */}
@@ -27,7 +40,6 @@ const Sidebar = ({ open, onClose }: SidebarProps) => {
 
       <aside
         className={cn(
-          // Base: fixed on mobile, static in flex row on desktop
           "fixed inset-y-0 left-0 z-30 flex w-64 flex-col border-r bg-background transition-transform duration-200",
           "md:static md:translate-x-0",
           open ? "translate-x-0" : "-translate-x-full"
@@ -35,7 +47,11 @@ const Sidebar = ({ open, onClose }: SidebarProps) => {
       >
         {/* Logo */}
         <div className="flex h-14 shrink-0 items-center justify-between border-b px-5">
-          <span className="text-lg font-bold tracking-tight">OnitX</span>
+          <img
+            src={theme === "dark" ? "/onitx-white1.png" : "/onitx-black1.png"}
+            alt="OnitX"
+            className="h-5 w-auto"
+          />
           <button
             onClick={onClose}
             className="rounded-md p-1 text-muted-foreground hover:text-foreground md:hidden"
@@ -45,7 +61,7 @@ const Sidebar = ({ open, onClose }: SidebarProps) => {
           </button>
         </div>
 
-        {/* Navigation */}
+        {/* Navigation — flex-1 so it pushes logout to the bottom */}
         <nav className="flex-1 space-y-0.5 px-3 py-4">
           {navItems.map(({ label, to, icon: Icon }) => (
             <NavLink
@@ -66,6 +82,17 @@ const Sidebar = ({ open, onClose }: SidebarProps) => {
             </NavLink>
           ))}
         </nav>
+
+        {/* Logout — pinned to the bottom */}
+        <div className="shrink-0 border-t px-3 py-3">
+          <button
+            onClick={handleLogout}
+            className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          >
+            <LogOut className="h-4 w-4 shrink-0" />
+            Logout
+          </button>
+        </div>
       </aside>
     </>
   );

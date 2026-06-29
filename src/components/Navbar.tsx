@@ -1,46 +1,61 @@
-import { Menu, LogOut } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Menu, Sun, Moon } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/button";
+import { useTheme } from "@/context/ThemeContext";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+
+const getInitials = (name?: string) =>
+  (name ?? "")
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase();
 
 interface NavbarProps {
   onMenuClick: () => void;
 }
 
 const Navbar = ({ onMenuClick }: NavbarProps) => {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
-
-  const handleLogout = () => {
-    logout();
-    navigate("/login", { replace: true });
-  };
+  const { user } = useAuth();
+  const { theme, toggle } = useTheme();
 
   return (
     <header className="flex h-14 shrink-0 items-center justify-between border-b bg-background px-4">
-      {/* Hamburger — mobile only */}
       <button
         onClick={onMenuClick}
-        className="rounded-md p-1.5 text-muted-foreground hover:text-foreground md:hidden"
+        className="rounded-lg p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground md:hidden"
         aria-label="Open sidebar"
       >
         <Menu className="h-5 w-5" />
       </button>
 
-      {/* Spacer — pushes right side to the end */}
       <div className="flex-1" />
 
-      {/* User info + logout */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
+        {/* Theme toggle */}
+        <button
+          onClick={toggle}
+          aria-label="Toggle theme"
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+        >
+          {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+        </button>
+
+        {/* Avatar + name */}
         {user && (
-          <span className="hidden max-w-[160px] truncate text-sm text-muted-foreground sm:block">
-            {user.name}
-          </span>
+          <div className="flex items-center gap-2.5">
+            <Avatar className="h-8 w-8">
+              <AvatarImage src={user.profileImage ?? undefined} alt={user.name} />
+              <AvatarFallback className="text-xs font-semibold">
+                {getInitials(user.name)}
+              </AvatarFallback>
+            </Avatar>
+            <span className="hidden max-w-[160px] truncate text-sm text-muted-foreground sm:block">
+              {user.name}
+            </span>
+          </div>
         )}
-        <Button variant="outline" size="sm" onClick={handleLogout}>
-          <LogOut className="h-3.5 w-3.5 sm:mr-1.5" />
-          <span className="hidden sm:inline">Logout</span>
-        </Button>
       </div>
     </header>
   );

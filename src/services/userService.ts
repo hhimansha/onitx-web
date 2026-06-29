@@ -1,5 +1,5 @@
 import api from "./api";
-import type { User, UpdateProfilePayload } from "@/types";
+import type { User, UserWithStats, UpdateProfilePayload } from "@/types";
 
 const unwrap = <T>(raw: unknown): T => {
   if (raw !== null && typeof raw === "object" && !Array.isArray(raw) && "success" in raw) {
@@ -10,6 +10,9 @@ const unwrap = <T>(raw: unknown): T => {
 
 export const getUsers = () =>
   api.get<unknown>("/api/users").then((res) => unwrap<User[]>(res.data));
+
+export const getAdminUsers = () =>
+  api.get<unknown>("/api/users").then((res) => unwrap<UserWithStats[]>(res.data));
 
 export interface UserOption {
   id: string;
