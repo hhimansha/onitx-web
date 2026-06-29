@@ -11,6 +11,25 @@ const config: Config = {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      keyframes: {
+        float: {
+          "0%, 100%": { transform: "translateY(0px)" },
+          "50%":       { transform: "translateY(-10px)" },
+        },
+        "shimmer-slide": {
+          "0%":   { transform: "translateX(-150%)" },
+          "100%": { transform: "translateX(150%)" },
+        },
+        "fade-in-up": {
+          from: { opacity: "0", transform: "translateY(24px)" },
+          to:   { opacity: "1", transform: "translateY(0)" },
+        },
+      },
+      animation: {
+        float:         "float 5s ease-in-out infinite",
+        "shimmer-slide": "shimmer-slide 2.5s infinite linear",
+        "fade-in-up":  "fade-in-up 0.6s ease-out forwards",
+      },
       colors: {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",

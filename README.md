@@ -1,18 +1,34 @@
-# OnitX Web
+# OnitX — Web Frontend
 
-React frontend for the OnitX application.
+Modern task management web application for teams. Built with React, TypeScript, and Tailwind CSS.
+
+## Features
+
+- **Landing page** — Public SaaS-style homepage with theme toggle
+- **Authentication** — Login, register, forgot/reset password with JWT
+- **Dashboard** — Real-time stats, charts (status, priority, trends, top assignees)
+- **Task management** — Kanban board (drag-and-drop) and table view
+- **Priority system** — HIGH / MEDIUM / LOW with color-coded cards and badges
+- **Team assignment** — Multi-assignee selection with avatar stacks
+- **Dark / light mode** — Persisted per user via localStorage
+- **Admin panel** — User management with task stats per user
+- **Role-based access** — Admin and regular user roles
 
 ## Tech Stack
 
-- **React 18** — UI library
-- **Vite** — build tool and dev server
-- **TypeScript** — type safety
-- **Tailwind CSS** — utility-first styling
-- **Shadcn UI** — accessible component library built on Radix UI
-- **React Router v6** — client-side routing
-- **Axios** — HTTP client
-- **React Hook Form** — form state management
-- **Zod** — schema validation
+| Layer | Library |
+|---|---|
+| UI framework | React 18 |
+| Language | TypeScript |
+| Build tool | Vite |
+| Styling | Tailwind CSS + Shadcn UI (Radix UI) |
+| Routing | React Router v6 |
+| Server state | TanStack React Query |
+| Forms | React Hook Form + Zod |
+| Charts | Recharts |
+| Drag and drop | dnd-kit |
+| HTTP client | Axios |
+| Fonts | Roboto (Google Fonts) |
 
 ## Getting Started
 
@@ -20,6 +36,7 @@ React frontend for the OnitX application.
 
 - Node.js 18+
 - npm 9+
+- OnitX backend running (see backend repo)
 
 ### Installation
 
@@ -31,81 +48,102 @@ cd onitx-web
 # 2. Install dependencies
 npm install
 
-# 3. Set up environment variables
+# 3. Configure environment
 cp .env.example .env
-# Edit .env and set VITE_API_URL to your backend URL
+# Set VITE_API_URL to your backend base URL
+```
 
-# 4. Start the development server
+### Development
+
+```bash
 npm run dev
 ```
 
-The app runs at `http://localhost:5173` by default.
+Runs at `http://localhost:5173` by default.
 
-### Available Scripts
+### Production build
 
-| Script | Description |
-|--------|-------------|
-| `npm run dev` | Start development server |
+```bash
+npm run build       # Type-check + bundle
+npm run preview     # Preview the build locally
+```
+
+Output goes to `dist/`.
+
+## Scripts
+
+| Command | Description |
+|---|---|
+| `npm run dev` | Start dev server with HMR |
 | `npm run build` | Type-check and build for production |
-| `npm run preview` | Preview the production build locally |
+| `npm run preview` | Serve the production build locally |
 | `npm run lint` | Run ESLint |
 
 ## Project Structure
 
 ```
 src/
-├── components/       # Shared/reusable components
-│   ├── ui/           # Shadcn UI components
+├── components/
+│   ├── kanban/           # Kanban board, columns, task cards
+│   ├── charts/           # Dashboard charts (Recharts)
+│   ├── ui/               # Shadcn UI primitives
+│   ├── AssigneeMultiSelect.tsx
 │   ├── Navbar.tsx
+│   ├── Sidebar.tsx
+│   ├── TaskPriorityBadge.tsx
+│   ├── TaskStatusBadge.tsx
 │   └── ProtectedRoute.tsx
-├── hooks/            # Custom React hooks
-├── layouts/          # Page layout wrappers
-│   └── MainLayout.tsx
-├── pages/            # Route-level page components
+├── context/
+│   ├── AuthContext.tsx   # JWT auth state
+│   └── ThemeContext.tsx  # Dark/light mode
+├── hooks/                # Custom hooks (useAuth, useDashboard, …)
+├── layouts/
+│   └── MainLayout.tsx    # Sidebar + Navbar shell
+├── pages/
+│   ├── HomePage.tsx      # Public landing page
 │   ├── LoginPage.tsx
+│   ├── RegisterPage.tsx
 │   ├── DashboardPage.tsx
 │   ├── TaskListPage.tsx
-│   ├── NewTaskPage.tsx
 │   ├── TaskDetailPage.tsx
-│   └── EditTaskPage.tsx
-├── services/         # API calls (Axios)
-│   └── api.ts
-├── types/            # Shared TypeScript types
-│   └── index.ts
-├── utils/            # Utility functions
-│   └── cn.ts
-├── App.tsx           # Root component with router
-├── main.tsx          # Entry point
-└── index.css         # Global styles + Tailwind + CSS variables
+│   ├── ProfilePage.tsx
+│   └── UsersPage.tsx     # Admin only
+├── services/             # Axios API calls
+├── types/                # Shared TypeScript types
+├── utils/
+│   └── cn.ts             # Tailwind class merge helper
+├── App.tsx               # Router + providers
+├── main.tsx              # Entry point
+└── index.css             # Global styles, Tailwind, CSS variables
 ```
 
 ## Routes
 
-| Path | Page | Auth Required |
-|------|------|--------------|
-| `/login` | Login | No |
-| `/dashboard` | Dashboard | Yes |
-| `/tasks` | Task List | Yes |
-| `/tasks/new` | New Task | Yes |
-| `/tasks/:id` | Task Detail | Yes |
-| `/tasks/:id/edit` | Edit Task | Yes |
+| Path | Page | Auth |
+|---|---|---|
+| `/` | Landing page | Public |
+| `/login` | Sign in | Public |
+| `/register` | Sign up | Public |
+| `/forgot-password` | Forgot password | Public |
+| `/reset-password/:token` | Reset password | Public |
+| `/dashboard` | Dashboard | Required |
+| `/tasks` | Task list (board + table) | Required |
+| `/tasks/new` | Create task | Required |
+| `/tasks/:id` | Task detail | Required |
+| `/tasks/:id/edit` | Edit task | Required |
+| `/profile` | User profile | Required |
+| `/users` | User management | Admin only |
 
-Unauthenticated users are redirected to `/login`. The `ProtectedRoute` component reads a `token` key from `localStorage` — replace with your real auth logic when implementing the auth feature.
+## Environment Variables
+
+| Variable | Description |
+|---|---|
+| `VITE_API_URL` | Base URL of the backend REST API (e.g. `http://localhost:5000/api`) |
 
 ## Adding Shadcn Components
 
 ```bash
 npx shadcn@latest add <component-name>
-# e.g.
-npx shadcn@latest add input
-npx shadcn@latest add card
-npx shadcn@latest add dialog
 ```
 
 Components are added to `src/components/ui/`.
-
-## Environment Variables
-
-| Variable | Description |
-|----------|-------------|
-| `VITE_API_URL` | Base URL of the backend REST API |
